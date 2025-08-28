@@ -24,11 +24,12 @@ const targetConfigs = {
 };
 
 class PromptAutomator {
-  constructor(targetApp, promptFile, customBaseDelay = null, setupDelay = 10) {
+  constructor(targetApp, promptFile, customBaseDelay = null, setupDelay = 10, pauseInterval = 8) {
     this.targetApp = targetApp;
     this.promptFile = promptFile;
     this.config = { ...targetConfigs[targetApp] };
     this.setupDelay = setupDelay * 1000; // Convert seconds to milliseconds
+    this.pauseInterval = pauseInterval;
     
     // Override base delay if provided
     if (customBaseDelay !== null) {
@@ -209,13 +210,16 @@ class PromptAutomator {
     }
   }
 
-  removePromptFromOriginal(promptToRemove) {
+  async processPromptCompletion(promptToRemove) {
     try {
       const ext = path.extname(this.promptFile).toLowerCase();
       
       if (ext === '.csv') {
+        // For CSV files, just mark as sent - no .processed file needed
         return this.markPromptAsSentInCSV(promptToRemove);
       } else {
+        // For text files, save to .processed file and remove from original
+        await this.saveProcessedPrompt(promptToRemove);
         return this.removePromptFromTextFile(promptToRemove);
       }
     } catch (error) {
@@ -291,7 +295,7 @@ class PromptAutomator {
 
   async promptUserToContinue() {
     return new Promise((resolve) => {
-      console.log(chalk.yellow('\n🔄 Processed 8 prompts. Press Enter to continue or Ctrl+C to stop...'));
+      console.log(chalk.yellow(`\n🔄 Processed ${this.pauseInterval} prompts. Press Enter to continue or Ctrl+C to stop...`));
       
       process.stdin.setRawMode(true);
       process.stdin.resume();
@@ -350,15 +354,14 @@ class PromptAutomator {
           break;
         }
         
-        // Save to processed file and remove from original
-        await this.saveProcessedPrompt(currentPrompt);
-        this.removePromptFromOriginal(currentPrompt);
+        // Update prompt status (CSV: mark as sent, Text: save to .processed file and remove)
+        await this.processPromptCompletion(currentPrompt);
         
         this.processedCount++;
         console.log(chalk.green(`✅ Prompt sent successfully (${this.processedCount} processed)`));
         
         // Check if we need user confirmation
-        if (this.processedCount % 8 === 0 && prompts.length > 1) {
+        if (this.processedCount % this.pauseInterval === 0 && prompts.length > 1) {
           await this.promptUserToContinue();
           // After user confirmation, use shorter delay like initial setup
           await this.waitWithCountdown(this.setupDelay, '⏳ Resuming automation - ensure target app is focused');
@@ -389,18 +392,52 @@ class PromptAutomator {
   }
 }
 
+// Parse named arguments
+function parseArgs(args) {
+  const result = { targetApp: null, promptFile: null };
+  
+  // First two arguments are positional
+  if (args.length >= 2) {
+    result.targetApp = args[0];
+    result.promptFile = args[1];
+  }
+  
+  // Parse named arguments
+  for (let i = 2; i < args.length; i++) {
+    const arg = args[i];
+    if (arg.startsWith('--delay=')) {
+      result.baseDelay = parseInt(arg.split('=')[1], 10);
+    } else if (arg.startsWith('--setup=')) {
+      result.setupDelay = parseInt(arg.split('=')[1], 10);
+    } else if (arg.startsWith('--pause=')) {
+      result.pauseInterval = parseInt(arg.split('=')[1], 10);
+    }
+  }
+  
+  return result;
+}
+
 // Main execution
 function main() {
   const args = process.argv.slice(2);
   
-  if (args.length < 2 || args.length > 4) {
+  if (args.length < 2) {
     console.log(chalk.blue('🛠️  Prompt-to-Image Automation Tool'));
     console.log('');
-    console.log(chalk.white('Usage:'), chalk.cyan('node app.js <targetApp> <promptFile> [baseDelaySeconds] [setupDelaySeconds]'));
+    console.log(chalk.white('Usage:'), chalk.cyan('node app.js <targetApp> <promptFile> [--delay=seconds] [--setup=seconds] [--pause=prompts]'));
+    console.log('');
+    console.log(chalk.white('Required Arguments:'));
+    console.log(chalk.gray('  targetApp   - leonardo or openai'));
+    console.log(chalk.gray('  promptFile  - path to .txt or .csv file'));
+    console.log('');
+    console.log(chalk.white('Optional Named Arguments:'));
+    console.log(chalk.gray('  --delay=N   - seconds between prompts (default: leonardo=40, openai=240)'));
+    console.log(chalk.gray('  --setup=N   - seconds for initial setup countdown (default: 10)'));
+    console.log(chalk.gray('  --pause=N   - prompts before user confirmation pause (default: 8)'));
     console.log('');
     console.log(chalk.white('Target Apps:'));
     Object.entries(targetConfigs).forEach(([key, config]) => {
-      console.log(`  ${chalk.cyan(key.padEnd(10))} - ${config.description} (default: ${config.baseDelay/1000}s)`);
+      console.log(`  ${chalk.cyan(key.padEnd(10))} - ${config.description} (default delay: ${config.baseDelay/1000}s)`);
     });
     console.log('');
     console.log(chalk.white('File Formats:'));
@@ -408,30 +445,48 @@ function main() {
     console.log(chalk.gray('  CSV files (.csv): Sent,Shot,PromptID,Prompt columns'));
     console.log('');
     console.log(chalk.white('Examples:'));
-    console.log(chalk.gray('  node app.js openai prompts/fox.txt'));
     console.log(chalk.gray('  node app.js openai prompts/story.csv'));
-    console.log(chalk.gray('  node app.js leonardo prompts/fox.txt 30     # Override delay to 30 seconds'));
-    console.log(chalk.gray('  node app.js leonardo prompts/fox.txt 30 20  # Override delay to 30s, setup to 20s'));
-    console.log('');
-    console.log(chalk.white('Note: Tool pauses every 8 prompts for user confirmation'));
+    console.log(chalk.gray('  node app.js openai prompts/story.csv --delay=180'));
+    console.log(chalk.gray('  node app.js openai prompts/story.csv --delay=180 --setup=15'));
+    console.log(chalk.gray('  node app.js openai prompts/story.csv --delay=5 --setup=5 --pause=1'));
+    console.log(chalk.gray('  node app.js leonardo prompts/fox.txt --delay=30 --pause=10'));
     process.exit(1);
   }
   
-  const [targetApp, promptFile, baseDelaySeconds, setupDelaySeconds] = args;
-  const customBaseDelay = baseDelaySeconds ? parseInt(baseDelaySeconds, 10) : null;
-  const customSetupDelay = setupDelaySeconds ? parseInt(setupDelaySeconds, 10) : 10;
+  const parsed = parseArgs(args);
   
-  if (baseDelaySeconds && (isNaN(customBaseDelay) || customBaseDelay < 1)) {
-    console.error(chalk.red('❌ Error: Base delay must be a positive number (seconds)'));
+  if (!parsed.targetApp || !parsed.promptFile) {
+    console.error(chalk.red('❌ Error: Both targetApp and promptFile are required'));
     process.exit(1);
   }
   
-  if (setupDelaySeconds && (isNaN(customSetupDelay) || customSetupDelay < 1)) {
-    console.error(chalk.red('❌ Error: Setup delay must be a positive number (seconds)'));
+  if (!targetConfigs[parsed.targetApp]) {
+    console.error(chalk.red(`❌ Error: Invalid target app. Must be one of: ${Object.keys(targetConfigs).join(', ')}`));
     process.exit(1);
   }
   
-  const automator = new PromptAutomator(targetApp, promptFile, customBaseDelay, customSetupDelay);
+  // Set defaults
+  const customBaseDelay = parsed.baseDelay || null;
+  const customSetupDelay = parsed.setupDelay || 10;
+  const customPauseInterval = parsed.pauseInterval || 8;
+  
+  // Validate numeric arguments
+  if (parsed.baseDelay && (isNaN(parsed.baseDelay) || parsed.baseDelay < 1)) {
+    console.error(chalk.red('❌ Error: --delay must be a positive number (seconds)'));
+    process.exit(1);
+  }
+  
+  if (parsed.setupDelay && (isNaN(parsed.setupDelay) || parsed.setupDelay < 1)) {
+    console.error(chalk.red('❌ Error: --setup must be a positive number (seconds)'));
+    process.exit(1);
+  }
+  
+  if (parsed.pauseInterval && (isNaN(parsed.pauseInterval) || parsed.pauseInterval < 1)) {
+    console.error(chalk.red('❌ Error: --pause must be a positive number (prompts)'));
+    process.exit(1);
+  }
+  
+  const automator = new PromptAutomator(parsed.targetApp, parsed.promptFile, customBaseDelay, customSetupDelay, customPauseInterval);
   automator.run();
 }
 

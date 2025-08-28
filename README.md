@@ -6,29 +6,39 @@ Command-line automation tool for pasting image generation prompts to Leonardo AI
 
 - Automated prompt pasting with configurable delays
 - Support for Leonardo AI and OpenAI DALL-E
+- CSV-based prompt management with progress tracking
 - Clipboard integration with keyboard simulation
-- Progress tracking and processed prompt saving
+- Scene/shot organization for complex narratives
 - Customizable base delay timing
 - Graceful interruption handling (Ctrl+C)
 - User confirmation every 8 prompts
 
 ## Installation
 
+**For experienced developers:**
 ```bash
 npm install
 ```
 
+**For new developers (especially Windows):**
+See [WINDOWS-SETUP.md](WINDOWS-SETUP.md) for detailed step-by-step instructions including Node.js installation, GitHub download, and permissions setup.
+
 ## Usage
 
 ```bash
-node app.js <targetApp> <promptFile> [baseDelaySeconds]
+node app.js <targetApp> <promptFile> [--delay=seconds] [--setup=seconds] [--pause=prompts]
 ```
 
 ### Parameters
 
+**Required (positional):**
 - `targetApp`: Target application (`leonardo` or `openai`)
-- `promptFile`: Path to text file containing prompts
-- `baseDelaySeconds` (optional): Override default delay between prompts
+- `promptFile`: Path to CSV file containing prompts
+
+**Optional (named):**
+- `--delay=N`: Seconds between prompts (overrides defaults below)
+- `--setup=N`: Initial countdown seconds (default: 10)
+- `--pause=N`: Prompts before user confirmation pause (default: 8)
 
 ### Target Applications
 
@@ -42,41 +52,35 @@ node app.js <targetApp> <promptFile> [baseDelaySeconds]
 ### Basic Usage
 
 ```bash
-# Use OpenAI with text file (default 240-second delay)
-node app.js openai prompts/boy-baker-v1.openai.txt
+# Use OpenAI with CSV file (default settings: 240s delay, 10s setup, pause every 8)
+node app.js openai prompts/boy-baker/boy-baker-v3.csv
 
-# Use OpenAI with CSV file (default 240-second delay)
-node app.js openai prompts/boy-baker-v3.csv
-
-# Use Leonardo AI with default 40-second delay  
-node app.js leonardo prompts/boy-baker.leonardo.txt
+# Use Leonardo AI with CSV file (default settings: 40s delay, 10s setup, pause every 8)  
+node app.js leonardo prompts/boy-baker/boy-baker-leonardo.csv
 ```
 
-### Custom Delay Examples
+### Custom Configuration Examples
 
 ```bash
-# Override OpenAI delay to 60 seconds
-node app.js openai prompts/boy-baker-v1.openai.txt 60
+# Testing mode: 1 prompt at a time with quick delays
+node app.js openai prompts/boy-baker/boy-baker-v3.csv --delay=5 --setup=5 --pause=1
 
-# Override Leonardo delay to 30 seconds
-node app.js leonardo prompts/dog-fox-leonardo.txt 30
+# Conservative: longer delays with frequent pauses
+node app.js openai prompts/boy-baker/boy-baker-v3.csv --delay=240 --setup=15 --pause=5
 
-# Quick testing with 5-second delay
-node app.js openai prompts/boy-baker-v2.openai.txt 5
+# Balanced: moderate delays for steady processing
+node app.js openai prompts/boy-baker/boy-baker-v3.csv --delay=180 --setup=12 --pause=8
+
+# Fast processing: shorter delays with less interruption
+node app.js openai prompts/boy-baker/boy-baker-v3.csv --delay=150 --setup=10 --pause=10
+
+# Long session: minimal interruptions for large batches
+node app.js openai prompts/boy-baker/boy-baker-v3.csv --delay=200 --pause=20
 ```
 
-## Prompt File Formats
+## Prompt File Format
 
-### Text Format (.txt)
-Numbered sequences with arrow format:
-```
-1→A young baker kneading dough in a rustic kitchen
-2→The baker placing bread into a stone oven
-3→Fresh baked goods cooling on wooden shelves
-```
-
-### CSV Format (.csv)
-Four columns: Sent, Shot, PromptID, Prompt
+CSV files with four columns: Sent, Shot, PromptID, Prompt
 ```csv
 Sent,Shot,PromptID,Prompt
 false,1,1,"A young baker kneading dough in a rustic kitchen"
@@ -89,6 +93,7 @@ false,2,1,"Fresh baked goods cooling on wooden shelves"
 - Organize by scenes/shots for complex narratives
 - Better data management and filtering
 - Resume processing from where you left off
+- No separate `.processed` files created - all tracking in the CSV
 
 ## How It Works
 
@@ -96,30 +101,47 @@ false,2,1,"Fresh baked goods cooling on wooden shelves"
 2. **Processing**: For each prompt:
    - Copies formatted prompt to clipboard
    - Simulates Cmd/Ctrl+A → Cmd/Ctrl+V → Enter
-   - Saves processed prompt to `.processed.txt` file
-   - Removes prompt from original file
+   - Marks prompt as `Sent=true` in CSV file
    - Waits for configured delay (with random jitter)
 3. **Confirmation**: Pauses every 8 prompts for user confirmation
 4. **Completion**: All prompts processed and saved
 
 ## Output Files
 
-- **Processed file**: `filename.processed.txt` - Contains all successfully processed prompts
-- **Original file**: Updated to remove processed prompts
+- Original CSV file is updated with `Sent=true` for processed prompts
+- No separate `.processed` files created
+- All progress tracked in the original CSV
 
-## Available Prompt Files
+## Prompt File Organization
 
-- `prompts/boy-baker-v1.openai.txt` - OpenAI-optimized baker story prompts
-- `prompts/boy-baker-v2.openai.txt` - Alternative baker story version
-- `prompts/boy-baker.leonardo.txt` - Leonardo AI-optimized baker prompts
-- `prompts/dog-fox-openai.txt` - OpenAI dog-fox story prompts  
-- `prompts/dog-fox-leonardo.txt` - Leonardo AI dog-fox prompts
+Files are organized in project folders under `prompts/`:
+
+```
+prompts/
+├── boy-baker/
+│   ├── boy-baker-openai.csv        # OpenAI-optimized baker story
+│   ├── boy-baker-leonardo.csv      # Leonardo AI-optimized baker story
+│   └── boy-baker-v3.csv            # Latest version with scene organization
+├── dog-fox/
+│   ├── dog-fox-openai.csv          # OpenAI dog-fox story prompts
+│   └── dog-fox-leonardo.csv        # Leonardo AI dog-fox prompts
+├── old-format/                     # Legacy text files (deprecated)
+└── your-project/
+    └── your-prompts.csv            # Your custom prompt files
+```
+
+**Project Structure Benefits:**
+- Keep related prompt variations together
+- Easy comparison between OpenAI vs Leonardo versions  
+- Organized by story/theme
+- Clean separation of different projects
+- All files use CSV format for consistency
 
 ## Interruption & Recovery
 
 - Press `Ctrl+C` to gracefully stop
 - Processed prompts are automatically saved
-- Resume by running the same command (processed prompts are skipped)
+- Resume by running the same command (prompts marked as `Sent=true` are skipped)
 
 ## Troubleshooting
 
