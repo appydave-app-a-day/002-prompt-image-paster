@@ -1,0 +1,18 @@
+{
+  "name": "prompt-image-paster",
+  "version": "1.0.0",
+  "description": "Command-line automation tool for pasting image generation prompts to Leonardo AI or OpenAI",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["automation", "clipboard", "image-generation", "leonardo", "openai"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "clipboardy": "^3.0.0",
+    "robotjs": "^0.6.0",
+    "chalk": "^4.1.2"
+  }
+}

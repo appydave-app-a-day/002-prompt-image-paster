@@ -1,0 +1,15 @@
+create image: A storybook-style painting of a dusty cobbled street corner in a 1930s French village, bathed in early morning sunlight. A bakery stands at the corner with ochre stone walls, market crates nearby, and a sparrow perched on the red-tiled roof. No people. 16:9
+create image: The cozy front room of a 1930s French bakery, sunlight streaming through windows and door. Warm wooden textures, flour dust in the air, shelves stacked with bread. No characters. 16:9
+create image: A rustic bakery interior with cluttered wooden counters, shelves full of bread, and overhead lighting casting a warm glow. Painterly hand-drawn aesthetic, no characters. 16:9
+create image: A soft golden light fills a warm kitchen at the back of a French bakery. Worn wooden table, bowls, rolling pins, and flour across the surface. No people. 16:9
+create image: A close-up view of a bakery table, showing a ball of kneaded dough, flour, and cloth towel. Painterly storybook texture, soft light and warmth. No characters. 16:9
+create image: A wooden bakery counter with a dough bowl resting under cloth, golden morning light from a window behind. Quiet and soft, painterly mood. No characters. 16:9
+create image: A rustic corner of a bakery with a stone oven glowing from inside. Shadows flicker on nearby surfaces, and baking tools line the walls. Hand-painted style, no people. 16:9
+create image: A quaint bakery front room, shelves of bread catching afternoon light. The door is open, showing a cobbled path outside. Warm painterly tones, no people. 16:9
+create image: A narrow cobblestone alley near a French bakery in soft evening light. A wooden crate rests nearby, warm shadows fall across the scene. No characters. 16:9
+create image: A quiet 1930s village street with the bakery behind. Morning light has a gray-blue tone, suggesting tension. Empty street, painterly texture, no people. 16:9
+create image: A stone village hall with worn steps and barred windows, set under a cloudy sky. Slightly overgrown edges, hand-drawn softness, no characters. 16:9
+create image: A dim police station reception area lit by lantern light. Wooden counter, chair, and logbook visible. Painterly hand-brushed style, no characters. 16:9
+create image: A cold stone jail cell with barred light casting across the wall. A stone bench rests below the window, textures soft and hand-painted. No people. 16:9
+create image: A rustic courtroom scene with wooden benches and judge’s podium. Daylight streams from high windows. Storybook realism, muted color palette, no people. 16:9
+create image: A soft golden beam of light enters a quiet jail cell, illuminating a wrapped loaf of bread on the bench. Painterly, semi-anime visual style, no characters. 16:9
