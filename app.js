@@ -18,7 +18,7 @@ const targetConfigs = {
     name: "OpenAI DALL-E", 
     baseDelay: 240000,       // 240 seconds
     jitter: 30000,           // ±30 seconds
-    promptFormat: "create image: {prompt} 16:9", // Wrapped format
+    promptFormat: "create image in 16:9 widescreen format: {prompt}", // Wrapped format
     description: "ChatGPT image generation"
   }
 };
