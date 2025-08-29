@@ -80,7 +80,7 @@ node app.js leonardo prompts/boy-baker/boy-baker-leonardo.csv
 
 ```bash
 # Testing: 1 prompt at a time, quick delays
-node app.js openai prompts/boy-baker/boy-baker-v3.csv --delay=5 --setup=5 --pause=1
+node app.js openai prompts/boy-baker/boy-baker-v3.csv --delay=5 --setup=10 --pause=1
 
 # Conservative: longer delays with frequent pauses
 node app.js openai prompts/boy-baker/boy-baker-v3.csv --delay=240 --setup=15 --pause=5
